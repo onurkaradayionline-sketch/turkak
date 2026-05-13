@@ -127,4 +127,3 @@ if main_menu == "🏠 Dashboard / Takvim":
 else:
     st.title(main_menu)
     st.info(f"{main_menu} modülü aktif. Bu alandan detaylı raporlama ve dosya takibi yapabilirsiniz.")
-    
