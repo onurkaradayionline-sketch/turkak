@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import calendar as cal
-import os
+import base64
 
 # --- SAYFA AYARLARI ---
 st.set_page_config(
@@ -12,159 +12,119 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- KURUMSAL TEMA VE MODERN TASARIM (CSS) ---
+# --- LOGO YÜKLEME FONKSİYONU ---
+def get_base64_of_bin_file(bin_file):
+    try:
+        with open(bin_file, 'rb') as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except:
+        return ""
+
+logo_base64 = get_base64_of_bin_file("logo.webp")
+logo_html = f"data:image/webp;base64,{logo_base64}" if logo_base64 else ""
+
+# --- MODERN KURUMSAL TASARIM (CSS) ---
 st.markdown("""
     <style>
-    /* Ana Arkaplan ve Font */
     .stApp { background-color: #f8f9fa; }
-    
-    /* Header Tasarımı */
     .header-container {
         display: flex; align-items: center; 
         background: white; padding: 15px 25px; 
         border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        margin-bottom: 30px; border-top: 4px solid #e30613;
+        margin-bottom: 25px; border-top: 5px solid #e30613;
     }
-    .header-text {
-        margin-left: 25px; color: #333;
-        font-family: 'Inter', sans-serif;
-    }
-    .system-name { font-size: 26px; font-weight: 800; color: #e30613; line-height: 1.2; }
-    .department-name { font-size: 16px; font-weight: 500; color: #666; }
-
-    /* Kartlar ve Widgetlar */
-    .metric-card {
+    .system-name { font-size: 24px; font-weight: 800; color: #e30613; margin-left: 20px; }
+    .panel-card {
         background: white; padding: 20px; border-radius: 12px;
-        border-bottom: 3px solid #e30613; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px;
+        border: 1px solid #eee;
     }
-    
-    /* Takvim Stili */
-    .cal-day-box {
-        min-height: 120px; background: white; border-radius: 10px;
-        padding: 10px; border: 1px solid #eee; transition: 0.3s;
+    .cal-box {
+        min-height: 110px; background: white; border-radius: 10px;
+        padding: 8px; border: 1px solid #eee; transition: 0.3s;
     }
-    .cal-day-box:hover { box-shadow: 0 5px 15px rgba(227, 6, 19, 0.1); border-color: #e30613; }
-    .day-header { font-weight: 700; color: #e30613; margin-bottom: 8px; font-size: 18px; }
-    
-    /* Alarm ve Etiketler */
-    .pulse-alarm {
-        background: #e30613; color: white; padding: 12px;
-        border-radius: 10px; text-align: center; font-weight: bold;
-        animation: pulse-red 2s infinite;
-    }
-    @keyframes pulse-red { 0% {box-shadow: 0 0 0 0 rgba(227, 6, 19, 0.7);} 70% {box-shadow: 0 0 0 10px rgba(227, 6, 19, 0);} 100% {box-shadow: 0 0 0 0 rgba(227, 6, 19, 0);} }
-    
-    .event-label {
-        font-size: 11px; padding: 3px 7px; border-radius: 5px; 
-        color: white; margin-bottom: 4px; font-weight: 600;
-        display: block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
+    .cal-box:hover { border-color: #e30613; }
+    .tag { font-size: 10px; padding: 2px 5px; border-radius: 4px; color: white; margin-bottom: 3px; display: block; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- ÜST PANEL (LOGO & BAŞLIK) ---
-# logo.svg dosyasını yerel olarak kontrol et, yoksa placeholder koy
-logo_path = "logo.svg"
-col_header_1, col_header_2 = st.columns([1, 10])
-
-with st.container():
-    st.markdown(f"""
-        <div class="header-container">
-            <img src="https://raw.githubusercontent.com/yusuf-metin/streamlit-test/main/logo.png" width="90"> <!-- Yedek URL, logo.svg deponda olmalı -->
-            <div class="header-text">
-                <div class="system-name">İş Yönetim Sistemi</div>
-                <div class="department-name">TÜRKAK Kurumsal İletişim Müdürlüğü</div>
-            </div>
+# --- ÜST PANEL ---
+st.markdown(f"""
+    <div class="header-container">
+        <img src="{logo_html}" width="80" alt="LOGO">
+        <div>
+            <div class="system-name">İş Yönetim Sistemi</div>
+            <div style="margin-left:20px; color:#666; font-weight:500;">TÜRKAK Kurumsal İletişim Müdürlüğü</div>
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("### 📊 Yönetim Paneli")
-    main_menu = st.selectbox("Modül Seçiniz", [
-        "🏠 Dashboard & Takvim",
-        "📱 Sosyal Medya",
-        "📄 Resmi Yazışmalar",
-        "⚖️ Şikayet / İtiraz",
-        "🏛️ CİMER / İleti",
-        "🎨 Tasarım Faaliyetleri",
-        "📅 Etkinlik Organizasyonu",
-        "📧 E-Bülten",
-        "💼 Özel Kalem & Bütçe",
-        "🛒 Satın Alma"
+    st.markdown("### 🏢 Kurumsal Menü")
+    main_menu = st.selectbox("Gitmek İstediğiniz Modül", [
+        "🏠 Dashboard / Takvim", "📱 Sosyal Medya", "📄 Resmi Yazışmalar", 
+        "⚖️ Şikayet / İtiraz", "🏛️ CİMER / İleti", "🎨 Tasarım Faaliyetleri", 
+        "📅 Etkinlik", "📧 E-Bülten", "💼 Bütçe", "🛒 Satın Alma"
     ])
     st.divider()
-    st.write(f"📅 **Bugün:** {datetime.now().strftime('%d %B %Y')}")
-    st.caption("v2.0 Production Ready")
+    st.caption(f"v2.2 | {datetime.now().strftime('%d.%m.%Y')}")
 
-# --- DATA (ÖRNEK İŞLER) ---
-work_data = [
-    {"gün": 14, "is": "LinkedIn Bülten", "renk": "#0077b5"},
-    {"gün": 15, "is": "CİMER Yanıt", "renk": "#e30613"},
-    {"gün": 18, "is": "Video Kurgu V1", "renk": "#333"}
-]
+# --- ANA SAYFA AKIŞI ---
+if main_menu == "🏠 Dashboard / Takvim":
+    col_takvim, col_islem = st.columns([2.5, 1])
 
-# --- 1. DASHBOARD & FULL CALENDAR ---
-if main_menu == "🏠 Dashboard & Takvim":
-    c1, c2 = st.columns([3, 1])
-
-    with c1:
+    # SOL TARAF: TAKVİM
+    with col_takvim:
         st.markdown("### 🗓️ Kurumsal Planlama Takvimi")
-        
-        # Takvim Grid Sistemi
         cal_data = cal.monthcalendar(2026, 5)
-        days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
-        
+        days = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"]
         t_cols = st.columns(7)
-        for idx, day_name in enumerate(days):
-            t_cols[idx].markdown(f"<p style='text-align:center; font-weight:bold; color:#666;'>{day_name}</p>", unsafe_allow_html=True)
+        for i, d in enumerate(days): t_cols[i].markdown(f"<p style='text-align:center; font-weight:bold;'>{d}</p>", unsafe_allow_html=True)
 
         for week in cal_data:
             w_cols = st.columns(7)
-            for idx, day_num in enumerate(week):
-                if day_num != 0:
-                    with w_cols[idx]:
-                        st.markdown(f'<div class="cal-day-box"><div class="day-header">{day_num}</div>', unsafe_allow_html=True)
-                        # O güne ait görevleri listele
-                        day_tasks = [t for t in work_data if t["gün"] == day_num]
-                        for task in day_tasks:
-                            st.markdown(f'<div class="event-label" style="background:{task["renk"]}">{task["is"]}</div>', unsafe_allow_html=True)
+            for i, day in enumerate(week):
+                if day != 0:
+                    with w_cols[i]:
+                        st.markdown(f'<div class="cal-box"><div style="color:#e30613; font-weight:bold;">{day}</div>', unsafe_allow_html=True)
+                        # Örnek statik işler
+                        if day == 14: st.markdown('<div class="tag" style="background:#0077b5;">LinkedIn Post</div>', unsafe_allow_html=True)
+                        if day == 15: st.markdown('<div class="tag" style="background:#e30613;">CİMER Yanıt</div>', unsafe_allow_html=True)
                         st.markdown('</div>', unsafe_allow_html=True)
 
-    with c2:
-        st.markdown('<div class="pulse-alarm">🚨 ACİL AKSİYONLAR</div>', unsafe_allow_html=True)
-        st.write("")
-        
-        st.markdown("""
-            <div class="metric-card">
-                <b>📌 Günün İşleri</b><br>
-                <small>• BlueSky Post Planı<br>• Tasarım Revizeleri</small>
-            </div><br>
-            <div class="metric-card">
-                <b>⏳ Bekleyen Onaylar</b><br>
-                <small>• Satın Alma #12<br>• E-Bülten V2</small>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        with st.expander("➕ Hızlı Görev Tanımla"):
-            st.text_input("Görev Adı")
-            st.date_input("Tarih")
-            st.button("Sisteme Kaydet")
+    # SAĞ TARAF: ÜYE GİRİŞİ & İŞ GİRİŞİ
+    with col_islem:
+        # 1. Üye Girişi Bölümü
+        with st.container():
+            st.markdown('<div class="panel-card">', unsafe_allow_html=True)
+            st.subheader("👤 Ekip Girişi")
+            with st.form("login_form"):
+                user = st.text_input("Kullanıcı Adı")
+                pw = st.text_input("Şifre", type="password")
+                if st.form_submit_button("Giriş Yap"):
+                    st.success(f"Hoş geldin, {user}!")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-# --- MODÜL İÇERİKLERİ (TASLAK) ---
-elif main_menu == "📱 Sosyal Medya":
-    st.subheader("Sosyal Medya Yönetimi")
-    tab1, tab2 = st.tabs(["Yayın Takvimi", "Performans"])
-    with tab1:
-        st.info("BlueSky, Instagram, X ve LinkedIn içerikleri burada yönetilir.")
-        st.button("Yeni İçerik Talebi Oluştur")
+        # 2. İş Giriş Bölümü
+        with st.container():
+            st.markdown('<div class="panel-card">', unsafe_allow_html=True)
+            st.subheader("➕ Yeni İş Girişi")
+            with st.form("task_entry"):
+                task_name = st.text_input("İşin Tanımı")
+                task_mod = st.selectbox("Modül", ["Sosyal Medya", "Tasarım", "Yazışma", "Bütçe"])
+                task_date = st.date_input("Planlanan Tarih")
+                task_prio = st.select_slider("Önem Derecesi", options=["Düşük", "Normal", "Kritik"])
+                if st.form_submit_button("Sisteme Kaydet"):
+                    st.info(f"'{task_name}' kaydedildi ve takvime işlendi.")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-elif main_menu == "💼 Özel Kalem & Bütçe":
-    st.subheader("Bütçe ve Harcama Takibi")
-    m_col1, m_col2 = st.columns(2)
-    m_col1.metric("Kullanılan Bütçe", "₺24.000")
-    m_col2.metric("Kalan Limit", "₺176.000")
+        # 3. Günün Özet Alarmsı
+        st.error("🚨 Geciken İşler: 2")
 
+# --- MODÜL DETAYLARI ---
 else:
-    st.subheader(main_menu)
-    st.write("Bu bölüm içerik girişi için hazırdır.")
+    st.title(main_menu)
+    st.info(f"{main_menu} modülü aktif. Bu alandan detaylı raporlama ve dosya takibi yapabilirsiniz.")
+    
