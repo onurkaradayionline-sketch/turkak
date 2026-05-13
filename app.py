@@ -3,132 +3,152 @@ import pandas as pd
 from datetime import datetime
 import calendar as cal
 
-# --- SAYFA GENEL AYARLARI ---
-st.set_page_config(page_title="TÜRKAK Kurumsal İletişim Portalı", layout="wide")
+# --- SAYFA AYARLARI ---
+st.set_page_config(
+    page_title="TÜRKAK İletişim Portalı",
+    page_icon="💠",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# --- UI STİLLERİ (Gelişmiş Dashboard & Alarm) ---
+# --- MODERN KURUMSAL UI (CSS CUSTOMIZATION) ---
 st.markdown("""
     <style>
-    .main-header { font-size: 28px; font-weight: bold; color: #004a99; margin-bottom: 20px; }
-    .alarm-card { background-color: #ff4b4b; color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; text-align: center; font-weight: bold; animation: blinker 2s linear infinite; }
-    @keyframes blinker { 50% { opacity: 0.6; } }
-    .nav-card { background-color: #f0f2f6; padding: 10px; border-radius: 5px; border-left: 5px solid #004a99; margin-bottom: 5px; }
-    .calendar-cell { height: 120px; border: 1px solid #ddd; padding: 5px; border-radius: 8px; background: white; }
-    .task-tag { font-size: 10px; padding: 3px; border-radius: 4px; color: white; margin-bottom: 2px; cursor: pointer; }
+    /* Global Font ve Arkaplan */
+    .stApp { background-color: #fcfdfe; }
+    
+    /* Üst Bar Tasarımı */
+    .top-header {
+        display: flex; align-items: center; padding: 10px 0px;
+        border-bottom: 2px solid #004a99; margin-bottom: 25px;
+    }
+    .system-title {
+        color: #004a99; font-size: 24px; font-weight: 800;
+        margin-left: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    /* Kart Tasarımları */
+    .modern-card {
+        background: white; padding: 20px; border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #eef2f6;
+        margin-bottom: 15px;
+    }
+    
+    /* Alarm Kutusu */
+    .critical-alarm {
+        background: linear-gradient(45deg, #ff4b4b, #ff7675);
+        color: white; padding: 15px; border-radius: 10px;
+        text-align: center; font-weight: bold; font-size: 18px;
+        box-shadow: 0 4px 15px rgba(255, 75, 75, 0.3);
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.02);} 100% {transform: scale(1);} }
+
+    /* Takvim Hücreleri */
+    .cal-box {
+        min-height: 110px; border: 1px solid #edf2f7;
+        background: #ffffff; border-radius: 8px; padding: 8px;
+        transition: all 0.3s;
+    }
+    .cal-box:hover { border-color: #004a99; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+    .day-num { font-weight: bold; color: #4a5568; margin-bottom: 5px; }
+    .tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; color: white; margin-bottom: 3px; font-weight: 600; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- SAHTE VERİ HAVUZU (Takvimde Görünmesi İçin) ---
-tasks = [
-    {"gün": 14, "modül": "Sosyal Medya", "is": "Insta Post", "renk": "#E1306C"},
-    {"gün": 14, "modül": "Resmi Yazı", "is": "Gelen Evrak #12", "renk": "#607D8B"},
-    {"gün": 15, "modül": "CİMER", "is": "Cevap Bekliyor", "renk": "#D32F2F"},
-    {"gün": 18, "modül": "Satın Alma", "is": "Kamera İhalesi", "renk": "#FF9800"},
-]
+# --- HEADER (LOGO & BAŞLIK) ---
+st.markdown(f"""
+    <div class="top-header">
+        <img src="https://www.turkak.org.tr/assets/images/logo.png" width="120">
+        <div class="system-title">Kurumsal İletişim Müdürlüğü İş Yönetim Sistemi</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-# --- SIDEBAR NAVİGASYON (Her Başlık Bir Sekme) ---
+# --- SIDEBAR ---
 with st.sidebar:
-    st.image("https://www.turkak.org.tr/assets/images/logo.png", width=170)
-    st.title("SİSTEM MENÜSÜ")
-    menu = st.radio("MODÜLLER", [
-        "🏠 ANA SAYFA (Takvim)",
-        "📱 Sosyal Medya Yönetimi",
+    st.markdown("### 🛠️ Modül Menüsü")
+    menu = st.radio("", [
+        "🏠 Dashboard / Takvim",
+        "📱 Sosyal Medya",
         "📄 Resmi Yazışmalar",
-        "⚖️ Şikayet / İtiraz",
+        "⚖️ Şikayet & İtiraz",
         "🏛️ CİMER / İleti",
         "🎨 Tasarım Faaliyetleri",
         "📅 Etkinlik Organizasyonu",
         "📧 E-Bülten",
         "💼 Özel Kalem & Bütçe",
-        "🛒 Satın Alma Süreçleri"
+        "🛒 Satın Alma"
     ])
+    st.divider()
+    st.caption(f"TÜRKAK v1.5 | {datetime.now().strftime('%d.%m.%Y')}")
 
-# --- 1. ANA SAYFA (FULL SCREEN CALENDAR & SAĞ PANEL) ---
-if menu == "🏠 ANA SAYFA (Takvim)":
-    col_main, col_side = st.columns([3, 1])
+# --- TAKVİM VERİSİ ---
+sample_tasks = [
+    {"g": 14, "m": "SM", "t": "Insta Paylaşım", "c": "#E1306C"},
+    {"g": 15, "m": "CİMER", "t": "Son Gün!", "c": "#FF4B4B"},
+    {"g": 18, "m": "TSR", "t": "Afiş Teslim", "c": "#004a99"}
+]
 
-    with col_main:
-        st.markdown('<div class="main-header">🗓️ Mayıs 2026 Kurumsal Planlama Takvimi</div>', unsafe_allow_html=True)
+# --- 1. DASHBOARD & TAKVİM ---
+if menu == "🏠 Dashboard / Takvim":
+    left_col, right_col = st.columns([3, 1])
+
+    with left_col:
+        st.markdown("### 🗓️ Kurumsal Planlama Takvimi")
         
-        # Takvim Mantığı
-        yil, ay = 2026, 5
-        ay_takvimi = cal.monthcalendar(yil, ay)
-        gunler = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
+        # Takvim Oluşturma
+        cal_obj = cal.monthcalendar(2026, 5)
+        days = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"]
         
-        t_cols = st.columns(7)
-        for i, g in enumerate(gunler): t_cols[i].write(f"**{g}**")
+        cols = st.columns(7)
+        for i, d in enumerate(days):
+            cols[i].markdown(f"<div style='text-align:center; color:#718096; font-weight:bold;'>{d}</div>", unsafe_allow_html=True)
 
-        for hafta in ay_takvimi:
-            h_cols = st.columns(7)
-            for i, gun in enumerate(hafta):
-                if gun != 0:
-                    with h_cols[i]:
-                        st.markdown(f'<div class="calendar-cell"><b>{gun}</b>', unsafe_allow_html=True)
-                        gunluk = [t for t in tasks if t["gün"] == gun]
-                        for t in gunluk:
-                            st.markdown(f'<div class="task-tag" style="background:{t["renk"]}">{t["is"]}</div>', unsafe_allow_html=True)
+        for week in cal_obj:
+            w_cols = st.columns(7)
+            for i, day in enumerate(week):
+                if day != 0:
+                    with w_cols[i]:
+                        st.markdown(f'<div class="cal-box"><div class="day-num">{day}</div>', unsafe_allow_html=True)
+                        # O güne ait işler
+                        day_tasks = [x for x in sample_tasks if x["g"] == day]
+                        for task in day_tasks:
+                            st.markdown(f'<div class="tag" style="background:{task["c"]}">{task["t"]}</div>', unsafe_allow_html=True)
                         st.markdown('</div>', unsafe_allow_html=True)
 
-    with col_side:
-        st.markdown('<div class="alarm-card">🚨 KRİTİK UYARILAR</div>', unsafe_allow_html=True)
-        st.subheader("📌 Günün İşleri")
-        st.info("• Sosyal Medya Paylaşımı (14:00)\n• Kurul Toplantısı Hazırlığı")
+    with right_col:
+        st.markdown('<div class="critical-alarm">🚨 KRİTİK UYARILAR</div>', unsafe_allow_html=True)
+        st.write("")
         
-        st.subheader("⏳ Bekleyen Onaylar")
-        st.warning("• Afiş Tasarımı (Müdür Onayı)\n• Satın Alma Talebi #12")
+        with st.container():
+            st.markdown('<div class="modern-card"><b>📌 Günün İşleri</b><br><small>• Web Sitesi Güncelleme<br>• Sosyal Medya Planı</small></div>', unsafe_allow_html=True)
+            st.markdown('<div class="modern-card"><b>⏳ Bekleyen Onaylar</b><br><small>• Video Revize (Müdür)<br>• Satın Alma #45</small></div>', unsafe_allow_html=True)
+            st.markdown('<div class="modern-card"><b>🔥 Geciken İşler</b><br><small style="color:red;">• CİMER Başvuru #122</small></div>', unsafe_allow_html=True)
         
-        st.subheader("🔥 Geciken İşler")
-        st.error("• CİMER Yanıtı (-2 Gün)")
-        
-        st.divider()
-        with st.expander("⚡ Hızlı İş Oluştur"):
-            st.text_input("Görev Adı")
-            st.selectbox("Modül", ["Tasarım", "Yazışma", "Bütçe"])
-            st.button("Sisteme Ekle")
+        with st.expander("➕ Hızlı Görev Tanımla"):
+            st.text_input("Görev")
+            st.selectbox("Modül", ["Tasarım", "Yazışma", "Duyuru"])
+            st.button("Kaydet")
 
-# --- 2. SOSYAL MEDYA YÖNETİMİ ---
-elif menu == "📱 Sosyal Medya Yönetimi":
-    st.title("📱 Sosyal Medya Yönetimi")
-    s_tab1, s_tab2, s_tab3 = st.tabs(["Yayın Planı", "İçerik/Tasarım Talebi", "Performans Raporu"])
-    with s_tab1:
-        st.write("Platformlar: Instagram, X, LinkedIn, YouTube, BlueSky, Next Sosyal")
-        st.checkbox("BlueSky paylaşımı yapıldı mı?")
+# --- MODÜLLERİN İÇERİĞİ ---
+elif menu == "📱 Sosyal Medya":
+    st.header("📱 Sosyal Medya Yönetimi")
+    t1, t2, t3 = st.tabs(["Planlama", "İçerik Talebi", "Raporlar"])
+    with t1:
+        st.info("Instagram, X, LinkedIn, YouTube, BlueSky, Next Sosyal")
+        st.data_editor(pd.DataFrame({
+            "Platform": ["Instagram", "BlueSky", "LinkedIn"],
+            "Konu": ["Akreditasyon", "Yeni Blog", "Etkinlik"],
+            "Durum": ["Hazır", "Beklemede", "Onayda"]
+        }))
 
-# --- 3. RESMİ YAZIŞMALAR ---
 elif menu == "📄 Resmi Yazışmalar":
-    st.title("📄 Resmi Yazışma ve Evrak Takibi")
-    r_tab1, r_tab2 = st.columns(2)
-    with r_tab1:
-        st.subheader("Gelen/Giden Evrak")
-        st.text_input("Sayı No Giriniz")
-    with r_tab2:
-        st.subheader("Paraf/Zimmet")
-        st.selectbox("Dosya Kimde?", ["Müdür", "Uzman", "Arşiv"])
+    st.header("📄 Resmi Yazışma Yönetimi")
+    c1, c2 = st.columns(2)
+    c1.markdown('<div class="modern-card">📬 <b>Gelen Evrak</b><br>Takip No: 2026/45</div>', unsafe_allow_html=True)
+    c2.markdown('<div class="modern-card">📤 <b>Giden Evrak</b><br>Arşiv No: 2026/88</div>', unsafe_allow_html=True)
 
-# --- 4. TASARIM FAALİYETLERİ ---
-elif menu == "🎨 Tasarım Faaliyetleri":
-    st.title("🎨 Tasarım ve Video Süreç Yönetimi")
-    t_tab1, t_tab2, t_tab3 = st.tabs(["Görsel Tasarım", "Video Süreçleri", "Materyal Arşivi"])
-    with t_tab2:
-        st.info("Video Kurgu -> Montaj -> Revize -> Yayın Teslimi")
-        st.slider("Video İlerleme Durumu", 0, 100, 45)
-
-# --- 5. ÖZEL KALEM & BÜTÇE ---
-elif menu == "💼 Özel Kalem & Bütçe":
-    st.title("💼 Bütçe Yönetimi")
-    st.metric("Temsil Ağırlama Giderleri", "₺12.450", "-%2")
-    st.write("Etkinlik ve Üst Yönetim harcama takibi")
-
-# --- 6. SATIN ALMA SÜREÇLERİ ---
-elif menu == "🛒 Satın Alma Süreçleri":
-    st.title("🛒 Satın Alma Yönetimi")
-    col1, col2, col3 = st.columns(3)
-    col1.button("Teklif Topla")
-    col2.button("Fiyat Karşılaştır")
-    col3.button("Onay Süreci")
-    st.dataframe(pd.DataFrame({"Tedarikçi": ["A Ltd", "B A.Ş"], "Teklif": ["₺50.000", "₺48.500"], "Durum": ["Beklemede", "En Uygun"]}))
-
-# Diğer modüller için benzer yapıları kopyalayabilirsin.
+# Diğer modüller için benzer tasarımları bu şekilde ekleyebilirsin...
 else:
-    st.title(menu)
-    st.write("Bu modül veri girişi ve akış için hazırdır.")
+    st.header(menu)
+    st.write(f"{menu} süreci için veriler buraya gelecek.")
