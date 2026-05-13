@@ -1,0 +1,100 @@
+import streamlit as st
+from streamlit_calendar import calendar
+import pandas as pd
+from datetime import datetime
+
+# --- SİSTEM AYARLARI ---
+st.set_page_config(page_title="TÜRKAK Kurumsal İletişim", layout="wide", initial_sidebar_state="expanded")
+
+# --- CUSTOM CSS (Responsive & Alarm Design) ---
+st.markdown("""
+    <style>
+    .alarm-box {
+        background-color: #ff4b4b; padding: 20px; border-radius: 10px;
+        color: white; font-weight: bold; text-align: center;
+        animation: blinker 1.5s linear infinite;
+    }
+    @keyframes blinker { 50% { opacity: 0.5; } }
+    .stButton>button { width: 100%; border-radius: 5px; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- SIDEBAR (MODÜLLER) ---
+with st.sidebar:
+    st.image("https://www.turkak.org.tr/assets/images/logo.png", width=200) # Türkak Logo Linki
+    st.title("📌 ANA MODÜLLER")
+    menu = st.radio("Gitmek istediğiniz modülü seçin:", 
+        ["Dashboard", "Sosyal Medya", "Resmi Yazışmalar", "Tasarım & Video", "CİMER / Şikayet", "Bütçe & Satın Alma"])
+
+# --- DASHBOARD (ANA SAYFA) ---
+if menu == "Dashboard":
+    col1, col2 = st.columns([3, 1])
+
+    with col1:
+        st.subheader("📅 Kurumsal Planlama Takvimi (v1.0)")
+        calendar_options = {
+            "editable": True, "selectable": True,
+            "headerToolbar": {"left": "prev,next today", "center": "title", "right": "dayGridMonth,timeGridWeek,listWeek"},
+            "initialView": "dayGridMonth",
+        }
+        calendar_events = [
+            {"title": "E-Bülten Yayını", "start": "2026-05-15", "end": "2026-05-15", "color": "#3D9970"},
+            {"title": "Video Revize Deadline", "start": "2026-05-13", "end": "2026-05-13", "color": "#FF4136"}
+        ]
+        calendar(events=calendar_events, options=calendar_options)
+
+    with col2:
+        st.markdown('<div class="alarm-box">🚨 GÜNÜN KRİTİK İŞLERİ (2)</div>', unsafe_allow_html=True)
+        st.info("**Bekleyen Onaylar:** 3 Adet Tasarım")
+        st.warning("**Geciken:** CİMER Cevabı (Süre: -1 Gün)")
+        
+        with st.expander("➕ Hızlı İş Oluştur"):
+            st.text_input("Görev Adı")
+            st.selectbox("Modül", ["Tasarım", "Sosyal Medya", "Resmi Yazı"])
+            st.button("Kaydet")
+
+# --- SOSYAL MEDYA MODÜLÜ ---
+elif menu == "Sosyal Medya":
+    st.title("📱 Sosyal Medya Yönetimi")
+    tabs = st.tabs(["Yayın Takvimi", "İçerik Talepleri", "Performans Raporu"])
+    with tabs[0]:
+        st.write("Platformlar: Instagram, X, LinkedIn, YouTube, BlueSky, Next Sosyal")
+        df = pd.DataFrame({
+            "Tarih": ["2026-05-14", "2026-05-15"],
+            "Platform": ["Instagram", "LinkedIn"],
+            "Konu": ["Akreditasyon Haftası", "Yeni Atama Duyurusu"],
+            "Durum": ["Onayda", "Planlandı"]
+        })
+        st.table(df)
+
+# --- TASARIM & VİDEO MODÜLÜ ---
+elif menu == "Tasarım & Video":
+    st.title("🎬 Tasarım ve Video Süreç Yönetimi")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.subheader("Tasarım Talebi")
+        st.selectbox("Tür", ["Afiş", "Banner", "Kurumsal Materyal"])
+        st.file_uploader("Brief Dosyası")
+    with col_b:
+        st.subheader("Video Kurgu Takibi")
+        st.progress(75, text="Montaj Devam Ediyor (%75)")
+        st.button("Revize Notu Ekle")
+
+# --- BÜTÇE & SATIN ALMA ---
+elif menu == "Bütçe & Satın Alma":
+    st.title("💰 Özel Kalem Bütçe ve Satın Alma")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Kalan Bütçe", "145.000 TL", "-2.500 TL")
+    c2.metric("Onay Bekleyen Talepler", "4", "Acil")
+    c3.metric("Tamamlanan Satın Alma", "12", "+3")
+    
+    st.divider()
+    st.subheader("Yeni Satın Alma Talebi")
+    st.text_input("Ürün/Hizmet Adı")
+    st.number_input("Tahmini Bedel", step=100)
+    st.button("Onaya Gönder")
+
+# --- DİĞER MODÜLLER (LOGIC AYNI) ---
+else:
+    st.title(f"📂 {menu} Modülü")
+    st.info("Bu modül veri girişine hazırdır.")
